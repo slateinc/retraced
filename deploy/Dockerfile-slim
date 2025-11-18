@@ -1,7 +1,7 @@
 # # #
 # Cron build
 #
-FROM debian:buster-slim as cron
+FROM debian:trixie-slim as cron
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     ca-certificates \
@@ -22,7 +22,7 @@ COPY deploy/crontab /crontab
 # # #
 # Node build
 #
-FROM node:10 as node
+FROM node:20 as node
 
 ARG snyk_token
 
@@ -49,7 +49,7 @@ RUN make pkg SKIP=${skip_pkg}
 # Main build
 #
 # curl must be included for cron
-FROM debian:buster-slim
+FROM debian:trixie-slim
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     ca-certificates \
@@ -72,9 +72,10 @@ copy --from=node /src/migrations/es /src/migrations/es
 COPY --from=node /src/api /src/api
 COPY --from=node /src/retracedctl /src/bin/retracedctl
 COPY --from=node /src/processor /src/processor
-COPY --from=node /src/node_modules/snappy/build/Release/binding.node /src/node_modules/snappy/build/Release/binding.node
-COPY --from=node /src/node_modules/sse4_crc32/build/Release/crc32c.node /src/node_modules/sse4_crc32/build/Release/crc32c.node
-COPY --from=node /src/node_modules/bcrypt/lib/binding/bcrypt_lib.node /src/node_modules/bcrypt/lib/binding/bcrypt_lib.node
+# Optional native dependencies - snappy and sse4_crc32 fail to build with Node 20 but are not used
+# COPY --from=node /src/node_modules/snappy/build/Release/binding.node /src/node_modules/snappy/build/Release/binding.node
+# COPY --from=node /src/node_modules/sse4_crc32/build/Release/crc32c.node /src/node_modules/sse4_crc32/build/Release/crc32c.node
+COPY --from=node /src/node_modules/bcrypt/lib/binding/napi-v3/bcrypt_lib.node /src/node_modules/bcrypt/lib/binding/napi-v3/bcrypt_lib.node
 COPY --from=cron /usr/local/bin/supercronic-linux-amd64 /usr/local/bin/supercronic-linux-amd64
 COPY --from=cron /usr/local/bin/replicated-auditlog-cron /usr/local/bin/replicated-auditlog-cron
 COPY --from=cron /crontab /crontab

@@ -39,21 +39,20 @@ export interface GraphQLSearch {
   search: EventsConn;
 }
 
-export interface DocLocation {
+export interface GraphQLErrorLocation {
   line: number;
   column: number;
 }
 
-export interface GraphQLError {
+export interface GraphQLErrorResponse {
   message: string;
-  locations?: DocLocation[];
-  // path is actually (number|string)[];
+  locations?: GraphQLErrorLocation[];
   path?: string[];
 }
 
 export interface GraphQLResp {
-  data?: GraphQLSearch;
-  errors?: GraphQLError[];
+  data?: GraphQLSearch | null;
+  errors?: GraphQLErrorResponse[];
 }
 
 export interface GraphQLRequest {

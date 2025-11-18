@@ -131,9 +131,11 @@ describe("Viewer API", function () {
 
                          specify("Then the response should contain matching events.", function(done) {
                            this.timeout(Env.EsIndexWaitMs * 3);
+                           // Create a JWT with the viewer descriptor id and required fields
                            const desc = {
-                             environmentId: Env.EnvironmentID,
-                             groupId: groupID,
+                             id: token,                         // token is the viewer descriptor id
+                             environmentId: Env.EnvironmentID,  // Required by renderSavedExport
+                             groupId: groupID,                  // Required by renderSavedExport
                            };
                            const tkn = jwt.sign(desc, process.env.HMAC_SECRET_VIEWER);
                            chai.request(Env.Endpoint)

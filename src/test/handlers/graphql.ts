@@ -1,11 +1,8 @@
 import { suite, test } from "mocha-typescript";
 import { expect } from "chai";
-import { NoDuplicateFields } from "../../handlers/graphql/handler";
+import { customRules } from "../../handlers/graphql/handler";
 import schema from "../../handlers/graphql/schema";
 import { parse, validate } from "graphql";
-import { specifiedRules } from "graphql/validation";
-
-specifiedRules.push(NoDuplicateFields);
 
 @suite class GraphqlTest {
     @test public async "Graphql#validateValidFullSearch()"() {
@@ -55,8 +52,8 @@ specifiedRules.push(NoDuplicateFields);
         }
       }`;
 
-        var documentAST = parse(query);
-        const errors = validate(schema, documentAST);
+        const documentAST = parse(query);
+        const errors = validate(schema, documentAST, customRules);
         expect(errors).to.be.empty;
     }
 
@@ -65,8 +62,8 @@ specifiedRules.push(NoDuplicateFields);
         query Search($query: String!, $last: Int, $before: String) {
           search(query: $query, last: $last, before: $before) { totalCount totalCount }
         }`;
-        var documentAST = parse(query);
-        const errors = validate(schema, documentAST);
+        const documentAST = parse(query);
+        const errors = validate(schema, documentAST, customRules);
         expect(errors).to.not.be.empty;
         expect(String(errors[0])).to.have.string("Error: Duplicate field EventsConnection:totalCount.");
     }
@@ -76,10 +73,9 @@ specifiedRules.push(NoDuplicateFields);
         query Search($query: String!, $last: Int, $before: String) {
           search(query: $query, last: $last, before: $before) { a1:totalCount a2:totalCount }
         }`;
-        var documentAST = parse(query);
-        const errors = validate(schema, documentAST);
+        const documentAST = parse(query);
+        const errors = validate(schema, documentAST, customRules);
         expect(errors).to.not.be.empty;
         expect(String(errors[0])).to.have.string("Error: Duplicate field EventsConnection:totalCount.");
     }
 }
-
