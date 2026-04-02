@@ -93,6 +93,9 @@ dbutil:
       repository: retracedhq/retraced
       tag: 1.12.1
   replicas: 1
+elasticsearch:
+  # -- Set to false to disable Elasticsearch migration job (when using PG_SEARCH mode)
+  enabled: true
 kubernetesClusterDomain: cluster.local
 migrateEs:
   db:
