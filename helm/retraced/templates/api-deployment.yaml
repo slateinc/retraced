@@ -1,0 +1,96 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "retraced.fullname" . }}-api
+  labels:
+    retraceddev: "1"
+  {{- include "retraced.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.api.replicas }}
+  selector:
+    matchLabels:
+      retraceddev: "1"
+      tier: api
+    {{- include "retraced.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        app: auditlog
+        retraceddev: "1"
+        tier: api
+      {{- include "retraced.selectorLabels" . | nindent 8 }}
+    spec:
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                - key: app
+                  operator: In
+                  values:
+                  - auditlog
+                - key: tier
+                  operator: In
+                  values:
+                  - api
+              topologyKey: kubernetes.io/hostname
+            weight: 1
+      containers:
+      - command:
+        - node
+        - --inspect=0.0.0.0
+        - build/src/index.js
+        env:
+        - name: BUGSNAG_TOKEN
+          valueFrom:
+            secretKeyRef:
+              key: API_TOKEN
+              name: {{ include "retraced.fullname" . }}-auditlog
+        - name: EXPORT_PAGE_SIZE_INTERNAL
+          value: {{ quote .Values.api.api.env.exportPageSizeInternal }}
+        - name: KUBERNETES_CLUSTER_DOMAIN
+          value: {{ quote .Values.kubernetesClusterDomain }}
+        envFrom:
+        - secretRef:
+            name: {{ include "retraced.fullname" . }}-auditlog
+        image: {{ .Values.api.api.image.repository }}:{{ .Values.api.api.image.tag | default
+          .Chart.AppVersion }}
+        imagePullPolicy: {{ .Values.api.api.imagePullPolicy }}
+        name: api
+        ports:
+        - containerPort: 3000
+          name: http
+          protocol: TCP
+        readinessProbe:
+          failureThreshold: 5
+          httpGet:
+            path: /healthz
+            port: 3000
+          periodSeconds: 30
+          successThreshold: 2
+          timeoutSeconds: 10
+        resources: {{- toYaml .Values.api.api.resources | nindent 10 }}
+        startupProbe:
+          failureThreshold: 5
+          httpGet:
+            path: /healthz
+            port: 3000
+          periodSeconds: 10
+          timeoutSeconds: 10
+      initContainers:
+      - args: {{- toYaml .Values.api.bootstrap.args | nindent 8 }}
+        command:
+        - /bin/sh
+        env:
+        - name: KUBERNETES_CLUSTER_DOMAIN
+          value: {{ quote .Values.kubernetesClusterDomain }}
+        envFrom:
+        - secretRef:
+            name: {{ include "retraced.fullname" . }}-auditlog
+        - secretRef:
+            name: {{ include "retraced.fullname" . }}-bootstrap
+        image: {{ .Values.api.bootstrap.image.repository }}:{{ .Values.api.bootstrap.image.tag
+          | default .Chart.AppVersion }}
+        name: bootstrap
+        resources: {}
