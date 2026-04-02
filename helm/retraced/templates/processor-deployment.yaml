@@ -48,14 +48,14 @@ spec:
           valueFrom:
             secretKeyRef:
               key: PROCESSOR_TOKEN
-              name: {{ include "retraced.fullname" . }}-auditlog
+              name: {{ include "retraced.auditlogSecretName" . }}
         - name: PG_SEARCH
           value: {{ quote .Values.processor.processor.env.pgSearch }}
         - name: KUBERNETES_CLUSTER_DOMAIN
           value: {{ quote .Values.kubernetesClusterDomain }}
         envFrom:
         - secretRef:
-            name: {{ include "retraced.fullname" . }}-auditlog
+            name: {{ include "retraced.auditlogSecretName" . }}
         image: {{ .Values.processor.processor.image.repository }}:{{ .Values.processor.processor.image.tag
           | default .Chart.AppVersion }}
         imagePullPolicy: {{ .Values.processor.processor.imagePullPolicy }}

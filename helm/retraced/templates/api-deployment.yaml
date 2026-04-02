@@ -46,14 +46,14 @@ spec:
           valueFrom:
             secretKeyRef:
               key: API_TOKEN
-              name: {{ include "retraced.fullname" . }}-auditlog
+              name: {{ include "retraced.auditlogSecretName" . }}
         - name: EXPORT_PAGE_SIZE_INTERNAL
           value: {{ quote .Values.api.api.env.exportPageSizeInternal }}
         - name: KUBERNETES_CLUSTER_DOMAIN
           value: {{ quote .Values.kubernetesClusterDomain }}
         envFrom:
         - secretRef:
-            name: {{ include "retraced.fullname" . }}-auditlog
+            name: {{ include "retraced.auditlogSecretName" . }}
         image: {{ .Values.api.api.image.repository }}:{{ .Values.api.api.image.tag | default
           .Chart.AppVersion }}
         imagePullPolicy: {{ .Values.api.api.imagePullPolicy }}
@@ -87,9 +87,9 @@ spec:
           value: {{ quote .Values.kubernetesClusterDomain }}
         envFrom:
         - secretRef:
-            name: {{ include "retraced.fullname" . }}-auditlog
+            name: {{ include "retraced.auditlogSecretName" . }}
         - secretRef:
-            name: {{ include "retraced.fullname" . }}-bootstrap
+            name: {{ include "retraced.bootstrapSecretName" . }}
         image: {{ .Values.api.bootstrap.image.repository }}:{{ .Values.api.bootstrap.image.tag
           | default .Chart.AppVersion }}
         name: bootstrap

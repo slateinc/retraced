@@ -33,6 +33,9 @@ apiInternal:
     targetPort: 3000
   type: ClusterIP
 auditlog:
+  # -- Use an existing secret for auditlog configuration instead of creating one.
+  # The secret must contain all required keys (POSTGRES_HOST, HMAC_SECRET_ADMIN, etc.)
+  existingSecret: ""
   adminRootToken: "dev"
   apiBaseUrlPath: "/auditlog"
   apiToken: ""
@@ -65,6 +68,9 @@ auditlog:
   statsdHost: ""
   statsdPort: ""
 bootstrap:
+  # -- Use an existing secret for bootstrap configuration instead of creating one.
+  # The secret must contain BOOTSTRAP_API_TOKEN, BOOTSTRAP_ENVIRONMENT_ID, etc.
+  existingSecret: ""
   bootstrapApiToken: "dev"
   bootstrapEnvironmentId: "dev"
   bootstrapProjectId: "dev"

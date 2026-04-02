@@ -51,6 +51,30 @@ app.kubernetes.io/instance: {{ .Release.Name }}
 {{- end }}
 
 {{/*
+Name of the auditlog secret to use.
+If auditlog.existingSecret is set, use that; otherwise use the chart-generated name.
+*/}}
+{{- define "retraced.auditlogSecretName" -}}
+{{- if .Values.auditlog.existingSecret }}
+{{- .Values.auditlog.existingSecret }}
+{{- else }}
+{{- include "retraced.fullname" . }}-auditlog
+{{- end }}
+{{- end }}
+
+{{/*
+Name of the bootstrap secret to use.
+If bootstrap.existingSecret is set, use that; otherwise use the chart-generated name.
+*/}}
+{{- define "retraced.bootstrapSecretName" -}}
+{{- if .Values.bootstrap.existingSecret }}
+{{- .Values.bootstrap.existingSecret }}
+{{- else }}
+{{- include "retraced.fullname" . }}-bootstrap
+{{- end }}
+{{- end }}
+
+{{/*
 Create the name of the service account to use
 */}}
 {{- define "retraced.serviceAccountName" -}}

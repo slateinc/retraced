@@ -32,17 +32,17 @@ spec:
           valueFrom:
             secretKeyRef:
               key: NSQD_HOST
-              name: {{ include "retraced.fullname" . }}-auditlog
+              name: {{ include "retraced.auditlogSecretName" . }}
         - name: NSQD_HTTP_PORT
           valueFrom:
             secretKeyRef:
               key: NSQD_HTTP_PORT
-              name: {{ include "retraced.fullname" . }}-auditlog
+              name: {{ include "retraced.auditlogSecretName" . }}
         - name: RETRACED_DISABLE_GEOSYNC
           valueFrom:
             secretKeyRef:
               key: RETRACED_DISABLE_GEOSYNC
-              name: {{ include "retraced.fullname" . }}-auditlog
+              name: {{ include "retraced.auditlogSecretName" . }}
         - name: KUBERNETES_CLUSTER_DOMAIN
           value: {{ quote .Values.kubernetesClusterDomain }}
         image: {{ .Values.cron.cron.image.repository }}:{{ .Values.cron.cron.image.tag
