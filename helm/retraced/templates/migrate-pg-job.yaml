@@ -1,0 +1,38 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "retraced.fullname" . }}-migrate-pg
+  labels:
+    retraceddev: "1"
+  {{- include "retraced.labels" . | nindent 4 }}
+spec:
+  template:
+    metadata:
+      labels:
+        retraceddev: "1"
+    spec:
+      containers:
+      - command:
+        - node
+        - --inspect=0.0.0.0
+        - build/src/_db/runner-lite.js
+        - pg
+        env:
+        - name: BUGSNAG_TOKEN
+          valueFrom:
+            secretKeyRef:
+              key: DB_TOKEN
+              name: {{ include "retraced.fullname" . }}-auditlog
+        - name: SCHEMA_PATH
+          value: {{ quote .Values.migratePg.db.env.schemaPath }}
+        - name: KUBERNETES_CLUSTER_DOMAIN
+          value: {{ quote .Values.kubernetesClusterDomain }}
+        envFrom:
+        - secretRef:
+            name: {{ include "retraced.fullname" . }}-auditlog
+        image: {{ .Values.migratePg.db.image.repository }}:{{ .Values.migratePg.db.image.tag
+          | default .Chart.AppVersion }}
+        name: db
+        resources: {}
+      restartPolicy: OnFailure
+  ttlSecondsAfterFinished: 0
