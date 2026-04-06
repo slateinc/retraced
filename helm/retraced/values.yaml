@@ -1,3 +1,9 @@
+global:
+  # -- Global image registry used as a pull-through cache for all images.
+  # When set, every image reference becomes <imageRegistry>/<repository>:<tag>.
+  # Example: 775362322281.dkr.ecr.us-east-1.amazonaws.com/docker-hub
+  imageRegistry: ""
+
 # -- String to partially override the chart name
 nameOverride: ""
 # -- String to fully override the release name used for resource names
@@ -14,54 +20,97 @@ serviceAccount:
   # -- Annotations to add to the service account (e.g. for IRSA)
   annotations: {}
 
-# -- Auditlog secret configuration.
-# Set existingSecret to use a pre-existing secret and skip creation.
-auditlog:
-  # -- Name of an existing secret containing all required auditlog keys.
-  # When set, the chart will not create a secret and will reference this instead.
-  existingSecret: ""
-  adminRootToken: "dev"
+# These values are safe to commit and are visible in plain text.
+config:
   apiBaseUrlPath: "/auditlog"
-  apiToken: ""
-  dbToken: ""
-  elasticsearchNodes: "http://user:password@retraced-elasticsearch:9200"
-  geoipupdateAccountId: ""
   geoipupdateDbDir: "/etc/mmdb"
   geoipupdateEditionIds: "GeoLite2-City"
   geoipupdateFrequency: "168"
-  geoipupdateLicenseKey: ""
   geoipupdateUseMmdb: ""
   geoipupdateVerbose: "1"
-  hmacSecretAdmin: "xxxxxxx"
-  hmacSecretViewer: "xxxxxxxxx"
   logLevel: "info"
-  mandrillKey: ""
   nsqdHost: "retraced-nsqd"
   nsqdHttpPort: "4151"
   nsqdTcpPort: "4150"
   postgresDatabase: "retraced"
   postgresHost: "retraced-postgres"
-  postgresPassword: "password"
   postgresPoolSize: "10"
   postgresPort: "5434"
   postgresUser: "retraced"
-  processorToken: ""
   retracedApiBase: "http://localhost:3000/auditlog"
   retracedDisableGeosync: ""
   stage: ""
   statsdHost: ""
   statsdPort: ""
 
-# -- Bootstrap secret configuration.
-# Set existingSecret to use a pre-existing secret and skip creation.
+# -- Sensitive credentials, rendered as a Secret when createSecret is true.
+# Set createSecret: false and use extraEnv/extraEnvFrom to supply credentials from
+# your own secret management solution.
+credentials:
+  # -- Create a credentials secret from the values below.
+  # Set to false when managing secrets externally (e.g. ESO, Sealed Secrets, Vault).
+  createSecret: true
+  adminRootToken: "dev"
+  apiToken: ""
+  dbToken: ""
+  # -- May contain embedded credentials (e.g. http://user:password@host:9200)
+  elasticsearchNodes: "http://user:password@retraced-elasticsearch:9200"
+  geoipupdateAccountId: ""
+  geoipupdateLicenseKey: ""
+  hmacSecretAdmin: ""
+  hmacSecretViewer: ""
+  mandrillKey: ""
+  postgresPassword: ""
+  processorToken: ""
+
+# -- Extra environment variables injected into all application pods.
+# Accepts the full Kubernetes env var spec, so you can reference any secret or configmap.
+# Example:
+#   extraEnv:
+#     - name: POSTGRES_PASSWORD
+#       valueFrom:
+#         secretKeyRef:
+#           name: my-pg-secret
+#           key: password
+#     - name: HMAC_SECRET_ADMIN
+#       valueFrom:
+#         secretKeyRef:
+#           name: my-hmac-secret
+#           key: admin
+extraEnv: []
+
+# -- Extra envFrom sources mounted into all application pods.
+# Use this to mount entire external secrets or configmaps as environment variables.
+# Example:
+#   extraEnvFrom:
+#     - secretRef:
+#         name: my-existing-credentials
+#     - configMapRef:
+#         name: my-extra-config
+extraEnvFrom: []
+
+# -- Bootstrap init container configuration.
 bootstrap:
-  # -- Name of an existing secret containing all required bootstrap keys.
-  # When set, the chart will not create a secret and will reference this instead.
-  existingSecret: ""
-  bootstrapApiToken: "dev"
-  bootstrapEnvironmentId: "dev"
-  bootstrapProjectId: "dev"
-  bootstrapProjectName: "dev"
+  # -- Non-sensitive bootstrap config (rendered into the shared ConfigMap).
+  config:
+    environmentId: "dev"
+    projectId: "dev"
+    projectName: "dev"
+  # -- Bootstrap API token (sensitive). Set createSecret: false and supply
+  # BOOTSTRAP_API_TOKEN via extraEnv when managing secrets externally.
+  credentials:
+    createSecret: true
+    apiToken: "dev"
+  # -- Image for the bootstrap init container.
+  image:
+    repository: retracedhq/retraced
+    tag: "1.12.1"
+  # -- Command args passed to the bootstrap init container.
+  args:
+    - -c
+    - ./build/src/retracedctl bootstrap --projectName   "$BOOTSTRAP_PROJECT_NAME"
+      --projectId     "$BOOTSTRAP_PROJECT_ID" --environmentId "$BOOTSTRAP_ENVIRONMENT_ID"
+      --apiKey        "$BOOTSTRAP_API_TOKEN"
 
 elasticsearch:
   # -- Set to false to skip the Elasticsearch migration job (e.g. when using PG_SEARCH mode)
@@ -87,16 +136,6 @@ api:
       cpu: "1"
     requests:
       cpu: 100m
-  # -- Bootstrap init container configuration
-  bootstrap:
-    args:
-      - -c
-      - ./build/src/retracedctl bootstrap --projectName   "$BOOTSTRAP_PROJECT_NAME"
-        --projectId     "$BOOTSTRAP_PROJECT_ID" --environmentId "$BOOTSTRAP_ENVIRONMENT_ID"
-        --apiKey        "$BOOTSTRAP_API_TOKEN"
-    image:
-      repository: retracedhq/retraced
-      tag: "1.12.1"
 
 # -- Processor deployment configuration
 processor:

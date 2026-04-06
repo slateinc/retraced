@@ -52,27 +52,41 @@ app.kubernetes.io/instance: {{ .Release.Name }}
 {{- end }}
 
 {{/*
-Name of the auditlog secret to use.
-If auditlog.existingSecret is set, use that; otherwise use the chart-generated name.
+Build a full image reference, respecting global.imageRegistry as a pull-through cache prefix.
+Usage: {{ include "retraced.image" (dict "image" .Values.api.image "global" .Values.global "default" .Chart.AppVersion) }}
 */}}
-{{- define "retraced.auditlogSecretName" -}}
-{{- if .Values.auditlog.existingSecret }}
-{{- .Values.auditlog.existingSecret }}
-{{- else }}
-{{- include "retraced.fullname" . }}-auditlog
-{{- end }}
+{{- define "retraced.image" -}}
+{{- $registry := "" -}}
+{{- with .global -}}
+{{- $registry = .imageRegistry | default "" -}}
+{{- end -}}
+{{- $tag := .image.tag | default .default -}}
+{{- if $registry -}}
+{{- printf "%s/%s:%s" $registry .image.repository $tag -}}
+{{- else -}}
+{{- printf "%s:%s" .image.repository $tag -}}
+{{- end -}}
 {{- end }}
 
 {{/*
-Name of the bootstrap secret to use.
-If bootstrap.existingSecret is set, use that; otherwise use the chart-generated name.
+Name of the non-sensitive config ConfigMap.
+*/}}
+{{- define "retraced.configMapName" -}}
+{{- include "retraced.fullname" . }}-config
+{{- end }}
+
+{{/*
+Name of the credentials Secret.
+*/}}
+{{- define "retraced.credentialsSecretName" -}}
+{{- include "retraced.fullname" . }}-credentials
+{{- end }}
+
+{{/*
+Name of the bootstrap Secret.
 */}}
 {{- define "retraced.bootstrapSecretName" -}}
-{{- if .Values.bootstrap.existingSecret }}
-{{- .Values.bootstrap.existingSecret }}
-{{- else }}
 {{- include "retraced.fullname" . }}-bootstrap
-{{- end }}
 {{- end }}
 
 {{/*
@@ -83,5 +97,19 @@ Create the name of the service account to use.
 {{- default (include "retraced.fullname" .) .Values.serviceAccount.name }}
 {{- else }}
 {{- default "default" .Values.serviceAccount.name }}
+{{- end }}
+{{- end }}
+
+{{/*
+Standard envFrom block used by all application pods.
+Mounts the config ConfigMap, the credentials Secret, and any user-supplied extraEnvFrom sources.
+*/}}
+{{- define "retraced.envFrom" -}}
+- configMapRef:
+    name: {{ include "retraced.configMapName" . }}
+- secretRef:
+    name: {{ include "retraced.credentialsSecretName" . }}
+{{- with .Values.extraEnvFrom }}
+{{- toYaml . | nindent 0 }}
 {{- end }}
 {{- end }}

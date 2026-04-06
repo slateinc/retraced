@@ -20,23 +20,17 @@ spec:
       serviceAccountName: {{ include "retraced.serviceAccountName" . }}
       containers:
         - name: nsqd
-          image: {{ .Values.nsqd.image.repository }}:{{ .Values.nsqd.image.tag | default .Chart.AppVersion }}
+          image: {{ include "retraced.image" (dict "image" .Values.nsqd.image "global" .Values.global "default" .Chart.AppVersion) }}
           command:
             - /bin/sh
           args: {{- toYaml .Values.nsqd.args | nindent 12 }}
+          envFrom: {{- include "retraced.envFrom" . | nindent 12 }}
           env:
-            - name: STATSD_HOST
-              valueFrom:
-                secretKeyRef:
-                  name: {{ include "retraced.auditlogSecretName" . }}
-                  key: STATSD_HOST
-            - name: STATSD_PORT
-              valueFrom:
-                secretKeyRef:
-                  name: {{ include "retraced.auditlogSecretName" . }}
-                  key: STATSD_PORT
             - name: KUBERNETES_CLUSTER_DOMAIN
               value: {{ quote .Values.kubernetesClusterDomain }}
+            {{- with .Values.extraEnv }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
           ports:
             - name: tcp
               containerPort: 4150

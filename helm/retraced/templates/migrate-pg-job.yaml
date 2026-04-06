@@ -17,22 +17,23 @@ spec:
       serviceAccountName: {{ include "retraced.serviceAccountName" . }}
       containers:
         - name: db
-          image: {{ .Values.migratePg.image.repository }}:{{ .Values.migratePg.image.tag | default .Chart.AppVersion }}
+          image: {{ include "retraced.image" (dict "image" .Values.migratePg.image "global" .Values.global "default" .Chart.AppVersion) }}
           command:
             - node
             - build/src/_db/runner-lite.js
             - pg
+          envFrom: {{- include "retraced.envFrom" . | nindent 12 }}
           env:
             - name: BUGSNAG_TOKEN
               valueFrom:
                 secretKeyRef:
-                  name: {{ include "retraced.auditlogSecretName" . }}
+                  name: {{ include "retraced.credentialsSecretName" . }}
                   key: DB_TOKEN
             - name: SCHEMA_PATH
               value: {{ quote .Values.migratePg.env.schemaPath }}
             - name: KUBERNETES_CLUSTER_DOMAIN
               value: {{ quote .Values.kubernetesClusterDomain }}
-          envFrom:
-            - secretRef:
-                name: {{ include "retraced.auditlogSecretName" . }}
+            {{- with .Values.extraEnv }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
           resources: {}

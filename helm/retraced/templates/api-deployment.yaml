@@ -30,39 +30,44 @@ spec:
                     app.kubernetes.io/component: api
       initContainers:
         - name: bootstrap
-          image: {{ .Values.api.bootstrap.image.repository }}:{{ .Values.api.bootstrap.image.tag | default .Chart.AppVersion }}
+          image: {{ include "retraced.image" (dict "image" .Values.bootstrap.image "global" .Values.global "default" .Chart.AppVersion) }}
           command:
             - /bin/sh
-          args: {{- toYaml .Values.api.bootstrap.args | nindent 12 }}
+          args: {{- toYaml .Values.bootstrap.args | nindent 12 }}
+          envFrom:
+            {{- include "retraced.envFrom" . | nindent 12 }}
+            {{- if .Values.bootstrap.credentials.createSecret }}
+            - secretRef:
+                name: {{ include "retraced.bootstrapSecretName" . }}
+            {{- end }}
           env:
             - name: KUBERNETES_CLUSTER_DOMAIN
               value: {{ quote .Values.kubernetesClusterDomain }}
-          envFrom:
-            - secretRef:
-                name: {{ include "retraced.auditlogSecretName" . }}
-            - secretRef:
-                name: {{ include "retraced.bootstrapSecretName" . }}
+            {{- with .Values.extraEnv }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
           resources: {}
       containers:
         - name: api
-          image: {{ .Values.api.image.repository }}:{{ .Values.api.image.tag | default .Chart.AppVersion }}
+          image: {{ include "retraced.image" (dict "image" .Values.api.image "global" .Values.global "default" .Chart.AppVersion) }}
           imagePullPolicy: {{ .Values.api.image.pullPolicy }}
           command:
             - node
             - build/src/index.js
+          envFrom: {{- include "retraced.envFrom" . | nindent 12 }}
           env:
             - name: BUGSNAG_TOKEN
               valueFrom:
                 secretKeyRef:
-                  name: {{ include "retraced.auditlogSecretName" . }}
+                  name: {{ include "retraced.credentialsSecretName" . }}
                   key: API_TOKEN
             - name: EXPORT_PAGE_SIZE_INTERNAL
               value: {{ quote .Values.api.env.exportPageSizeInternal }}
             - name: KUBERNETES_CLUSTER_DOMAIN
               value: {{ quote .Values.kubernetesClusterDomain }}
-          envFrom:
-            - secretRef:
-                name: {{ include "retraced.auditlogSecretName" . }}
+            {{- with .Values.extraEnv }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
           ports:
             - name: http
               containerPort: 3000

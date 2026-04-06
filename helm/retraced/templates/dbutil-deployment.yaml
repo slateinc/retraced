@@ -20,14 +20,15 @@ spec:
       serviceAccountName: {{ include "retraced.serviceAccountName" . }}
       containers:
         - name: dbutil
-          image: {{ .Values.dbutil.image.repository }}:{{ .Values.dbutil.image.tag | default .Chart.AppVersion }}
+          image: {{ include "retraced.image" (dict "image" .Values.dbutil.image "global" .Values.global "default" .Chart.AppVersion) }}
           command:
             - /bin/sleep
             - infinity
+          envFrom: {{- include "retraced.envFrom" . | nindent 12 }}
           env:
             - name: KUBERNETES_CLUSTER_DOMAIN
               value: {{ quote .Values.kubernetesClusterDomain }}
-          envFrom:
-            - secretRef:
-                name: {{ include "retraced.auditlogSecretName" . }}
+            {{- with .Values.extraEnv }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
           resources: {}
