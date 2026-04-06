@@ -22,14 +22,14 @@ spec:
           valueFrom:
             secretKeyRef:
               key: DB_TOKEN
-              name: {{ include "retraced.fullname" . }}-auditlog
+              name: {{ include "retraced.auditlogSecretName" . }}
         - name: SCHEMA_PATH
           value: {{ quote .Values.migratePg.db.env.schemaPath }}
         - name: KUBERNETES_CLUSTER_DOMAIN
           value: {{ quote .Values.kubernetesClusterDomain }}
         envFrom:
         - secretRef:
-            name: {{ include "retraced.fullname" . }}-auditlog
+            name: {{ include "retraced.auditlogSecretName" . }}
         image: {{ .Values.migratePg.db.image.repository }}:{{ .Values.migratePg.db.image.tag
           | default .Chart.AppVersion }}
         name: db

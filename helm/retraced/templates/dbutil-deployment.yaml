@@ -32,7 +32,7 @@ spec:
           value: {{ quote .Values.kubernetesClusterDomain }}
         envFrom:
         - secretRef:
-            name: {{ include "retraced.fullname" . }}-auditlog
+            name: {{ include "retraced.auditlogSecretName" . }}
         image: {{ .Values.dbutil.dbutil.image.repository }}:{{ .Values.dbutil.dbutil.image.tag
           | default .Chart.AppVersion }}
         name: dbutil

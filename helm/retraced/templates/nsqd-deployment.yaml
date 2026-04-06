@@ -48,12 +48,12 @@ spec:
           valueFrom:
             secretKeyRef:
               key: STATSD_HOST
-              name: {{ include "retraced.fullname" . }}-auditlog
+              name: {{ include "retraced.auditlogSecretName" . }}
         - name: STATSD_PORT
           valueFrom:
             secretKeyRef:
               key: STATSD_PORT
-              name: {{ include "retraced.fullname" . }}-auditlog
+              name: {{ include "retraced.auditlogSecretName" . }}
         - name: KUBERNETES_CLUSTER_DOMAIN
           value: {{ quote .Values.kubernetesClusterDomain }}
         image: {{ .Values.nsqd.nsqd.image.repository }}:{{ .Values.nsqd.nsqd.image.tag

@@ -1,3 +1,4 @@
+{{- if .Values.elasticsearch.enabled }}
 apiVersion: batch/v1
 kind: Job
 metadata:
@@ -22,17 +23,18 @@ spec:
           valueFrom:
             secretKeyRef:
               key: DB_TOKEN
-              name: {{ include "retraced.fullname" . }}-auditlog
+              name: {{ include "retraced.auditlogSecretName" . }}
         - name: SCHEMA_PATH
           value: {{ quote .Values.migrateEs.db.env.schemaPath }}
         - name: KUBERNETES_CLUSTER_DOMAIN
           value: {{ quote .Values.kubernetesClusterDomain }}
         envFrom:
         - secretRef:
-            name: {{ include "retraced.fullname" . }}-auditlog
+            name: {{ include "retraced.auditlogSecretName" . }}
         image: {{ .Values.migrateEs.db.image.repository }}:{{ .Values.migrateEs.db.image.tag
           | default .Chart.AppVersion }}
         name: db
         resources: {}
       restartPolicy: OnFailure
   ttlSecondsAfterFinished: 0
+{{- end }}
