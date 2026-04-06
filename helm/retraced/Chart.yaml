@@ -3,6 +3,6 @@ name: retraced
 description: Helm chart for Retraced, an open-source audit logging service
 type: application
 # Increment this version each time you make changes to the chart
-version: 0.2.0
+version: 0.3.0
 # The version of the Retraced application being deployed
 appVersion: "1.12.1"
