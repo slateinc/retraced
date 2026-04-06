@@ -13,6 +13,8 @@ spec:
       app.kubernetes.io/component: nsqd
   template:
     metadata:
+      annotations:
+        {{- include "retraced.checksumAnnotations" . | nindent 8 }}
       labels:
         {{- include "retraced.selectorLabels" . | nindent 8 }}
         app.kubernetes.io/component: nsqd

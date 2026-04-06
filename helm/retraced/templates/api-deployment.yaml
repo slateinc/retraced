@@ -13,6 +13,9 @@ spec:
       app.kubernetes.io/component: api
   template:
     metadata:
+      annotations:
+        {{- include "retraced.checksumAnnotations" . | nindent 8 }}
+        checksum/bootstrap-secret: {{ include (print $.Template.BasePath "/bootstrap-secret.yaml") . | sha256sum }}
       labels:
         {{- include "retraced.selectorLabels" . | nindent 8 }}
         app.kubernetes.io/component: api

@@ -101,6 +101,15 @@ Create the name of the service account to use.
 {{- end }}
 
 {{/*
+Checksum annotations for pod templates. Forces a rolling restart when the
+ConfigMap or credentials Secret changes.
+*/}}
+{{- define "retraced.checksumAnnotations" -}}
+checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+checksum/secret: {{ include (print $.Template.BasePath "/auditlog-secret.yaml") . | sha256sum }}
+{{- end }}
+
+{{/*
 Standard envFrom block used by all application pods.
 Mounts the config ConfigMap, the credentials Secret, and any user-supplied extraEnvFrom sources.
 */}}
