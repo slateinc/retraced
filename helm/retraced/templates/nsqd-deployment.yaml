@@ -1,65 +1,47 @@
-apiVersion: v1
-kind: Service
-metadata:
-  name: {{ include "retraced.fullname" . }}-nsqd
-  labels:
-    app: auditlog
-    retraceddev: "1"
-    tier: nsq
-  {{- include "retraced.labels" . | nindent 4 }}
-spec:
-  type: {{ .Values.nsqd.type }}
-  selector:
-    app: auditlog
-    retraceddev: "1"
-    tier: nsq
-  {{- include "retraced.selectorLabels" . | nindent 4 }}
-  ports:
-	{{- .Values.nsqd.ports | toYaml | nindent 2 }}
----
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: {{ include "retraced.fullname" . }}-nsqd
   labels:
-    retraceddev: "1"
-  {{- include "retraced.labels" . | nindent 4 }}
+    {{- include "retraced.labels" . | nindent 4 }}
+    app.kubernetes.io/component: nsqd
 spec:
-  replicas: {{ .Values.nsqd.replicas }}
+  replicas: {{ .Values.nsqd.replicaCount }}
   selector:
     matchLabels:
-      retraceddev: "1"
-      tier: nsq
-    {{- include "retraced.selectorLabels" . | nindent 6 }}
+      {{- include "retraced.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: nsqd
   template:
     metadata:
       labels:
-        app: auditlog
-        retraceddev: "1"
-        tier: nsq
-      {{- include "retraced.selectorLabels" . | nindent 8 }}
+        {{- include "retraced.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: nsqd
     spec:
+      serviceAccountName: {{ include "retraced.serviceAccountName" . }}
       containers:
-      - args: {{- toYaml .Values.nsqd.nsqd.args | nindent 8 }}
-        command:
-        - /bin/sh
-        env:
-        - name: STATSD_HOST
-          valueFrom:
-            secretKeyRef:
-              key: STATSD_HOST
-              name: {{ include "retraced.auditlogSecretName" . }}
-        - name: STATSD_PORT
-          valueFrom:
-            secretKeyRef:
-              key: STATSD_PORT
-              name: {{ include "retraced.auditlogSecretName" . }}
-        - name: KUBERNETES_CLUSTER_DOMAIN
-          value: {{ quote .Values.kubernetesClusterDomain }}
-        image: {{ .Values.nsqd.nsqd.image.repository }}:{{ .Values.nsqd.nsqd.image.tag
-          | default .Chart.AppVersion }}
-        name: nsqd
-        ports:
-        - containerPort: 4150
-        - containerPort: 4151
-        resources: {{- toYaml .Values.nsqd.nsqd.resources | nindent 10 }}
+        - name: nsqd
+          image: {{ .Values.nsqd.image.repository }}:{{ .Values.nsqd.image.tag | default .Chart.AppVersion }}
+          command:
+            - /bin/sh
+          args: {{- toYaml .Values.nsqd.args | nindent 12 }}
+          env:
+            - name: STATSD_HOST
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "retraced.auditlogSecretName" . }}
+                  key: STATSD_HOST
+            - name: STATSD_PORT
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "retraced.auditlogSecretName" . }}
+                  key: STATSD_PORT
+            - name: KUBERNETES_CLUSTER_DOMAIN
+              value: {{ quote .Values.kubernetesClusterDomain }}
+          ports:
+            - name: tcp
+              containerPort: 4150
+              protocol: TCP
+            - name: http
+              containerPort: 4151
+              protocol: TCP
+          resources: {{- toYaml .Values.nsqd.resources | nindent 12 }}

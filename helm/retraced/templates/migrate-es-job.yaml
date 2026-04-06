@@ -4,37 +4,37 @@ kind: Job
 metadata:
   name: {{ include "retraced.fullname" . }}-migrate-es
   labels:
-    retraceddev: "1"
-  {{- include "retraced.labels" . | nindent 4 }}
+    {{- include "retraced.labels" . | nindent 4 }}
+    app.kubernetes.io/component: migrate-es
 spec:
+  ttlSecondsAfterFinished: 0
   template:
     metadata:
       labels:
-        retraceddev: "1"
+        {{- include "retraced.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: migrate-es
     spec:
-      containers:
-      - command:
-        - node
-        - --inspect=0.0.0.0
-        - build/src/_db/runner-lite.js
-        - es
-        env:
-        - name: BUGSNAG_TOKEN
-          valueFrom:
-            secretKeyRef:
-              key: DB_TOKEN
-              name: {{ include "retraced.auditlogSecretName" . }}
-        - name: SCHEMA_PATH
-          value: {{ quote .Values.migrateEs.db.env.schemaPath }}
-        - name: KUBERNETES_CLUSTER_DOMAIN
-          value: {{ quote .Values.kubernetesClusterDomain }}
-        envFrom:
-        - secretRef:
-            name: {{ include "retraced.auditlogSecretName" . }}
-        image: {{ .Values.migrateEs.db.image.repository }}:{{ .Values.migrateEs.db.image.tag
-          | default .Chart.AppVersion }}
-        name: db
-        resources: {}
       restartPolicy: OnFailure
-  ttlSecondsAfterFinished: 0
+      serviceAccountName: {{ include "retraced.serviceAccountName" . }}
+      containers:
+        - name: db
+          image: {{ .Values.migrateEs.image.repository }}:{{ .Values.migrateEs.image.tag | default .Chart.AppVersion }}
+          command:
+            - node
+            - build/src/_db/runner-lite.js
+            - es
+          env:
+            - name: BUGSNAG_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "retraced.auditlogSecretName" . }}
+                  key: DB_TOKEN
+            - name: SCHEMA_PATH
+              value: {{ quote .Values.migrateEs.env.schemaPath }}
+            - name: KUBERNETES_CLUSTER_DOMAIN
+              value: {{ quote .Values.kubernetesClusterDomain }}
+          envFrom:
+            - secretRef:
+                name: {{ include "retraced.auditlogSecretName" . }}
+          resources: {}
 {{- end }}

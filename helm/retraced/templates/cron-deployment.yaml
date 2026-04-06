@@ -3,50 +3,45 @@ kind: Deployment
 metadata:
   name: {{ include "retraced.fullname" . }}-cron
   labels:
-    retraceddev: "1"
-  {{- include "retraced.labels" . | nindent 4 }}
+    {{- include "retraced.labels" . | nindent 4 }}
+    app.kubernetes.io/component: cron
 spec:
-  replicas: {{ .Values.cron.replicas }}
+  replicas: {{ .Values.cron.replicaCount }}
   selector:
     matchLabels:
-      retraceddev: "1"
-      tier: cron
-    {{- include "retraced.selectorLabels" . | nindent 6 }}
+      {{- include "retraced.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: cron
   template:
     metadata:
       labels:
-        app: auditlog
-        dest: nsq
-        retraceddev: "1"
-        source: cron
-        tier: cron
-      {{- include "retraced.selectorLabels" . | nindent 8 }}
+        {{- include "retraced.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: cron
     spec:
+      serviceAccountName: {{ include "retraced.serviceAccountName" . }}
       containers:
-      - command:
-        - /bin/sh
-        - -c
-        - /usr/local/bin/retraced-auditlog-cron /crontab 2>&1 | grep ERRO
-        env:
-        - name: NSQD_HOST
-          valueFrom:
-            secretKeyRef:
-              key: NSQD_HOST
-              name: {{ include "retraced.auditlogSecretName" . }}
-        - name: NSQD_HTTP_PORT
-          valueFrom:
-            secretKeyRef:
-              key: NSQD_HTTP_PORT
-              name: {{ include "retraced.auditlogSecretName" . }}
-        - name: RETRACED_DISABLE_GEOSYNC
-          valueFrom:
-            secretKeyRef:
-              key: RETRACED_DISABLE_GEOSYNC
-              name: {{ include "retraced.auditlogSecretName" . }}
-        - name: KUBERNETES_CLUSTER_DOMAIN
-          value: {{ quote .Values.kubernetesClusterDomain }}
-        image: {{ .Values.cron.cron.image.repository }}:{{ .Values.cron.cron.image.tag
-          | default .Chart.AppVersion }}
-        imagePullPolicy: {{ .Values.cron.cron.imagePullPolicy }}
-        name: cron
-        resources: {{- toYaml .Values.cron.cron.resources | nindent 10 }}
+        - name: cron
+          image: {{ .Values.cron.image.repository }}:{{ .Values.cron.image.tag | default .Chart.AppVersion }}
+          imagePullPolicy: {{ .Values.cron.image.pullPolicy }}
+          command:
+            - /bin/sh
+            - -c
+            - /usr/local/bin/retraced-auditlog-cron /crontab 2>&1 | grep ERRO
+          env:
+            - name: NSQD_HOST
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "retraced.auditlogSecretName" . }}
+                  key: NSQD_HOST
+            - name: NSQD_HTTP_PORT
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "retraced.auditlogSecretName" . }}
+                  key: NSQD_HTTP_PORT
+            - name: RETRACED_DISABLE_GEOSYNC
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "retraced.auditlogSecretName" . }}
+                  key: RETRACED_DISABLE_GEOSYNC
+            - name: KUBERNETES_CLUSTER_DOMAIN
+              value: {{ quote .Values.kubernetesClusterDomain }}
+          resources: {{- toYaml .Values.cron.resources | nindent 12 }}

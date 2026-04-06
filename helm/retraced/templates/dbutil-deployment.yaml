@@ -3,37 +3,31 @@ kind: Deployment
 metadata:
   name: {{ include "retraced.fullname" . }}-dbutil
   labels:
-    app: retraced
-    retraceddev: "1"
-    tier: dbutil
-  {{- include "retraced.labels" . | nindent 4 }}
+    {{- include "retraced.labels" . | nindent 4 }}
+    app.kubernetes.io/component: dbutil
 spec:
-  replicas: {{ .Values.dbutil.replicas }}
+  replicas: {{ .Values.dbutil.replicaCount }}
   selector:
     matchLabels:
-      app: retraced
-      retraceddev: "1"
-      tier: dbutil
-    {{- include "retraced.selectorLabels" . | nindent 6 }}
+      {{- include "retraced.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: dbutil
   template:
     metadata:
       labels:
-        app: retraced
-        retraceddev: "1"
-        tier: dbutil
-      {{- include "retraced.selectorLabels" . | nindent 8 }}
+        {{- include "retraced.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: dbutil
     spec:
+      serviceAccountName: {{ include "retraced.serviceAccountName" . }}
       containers:
-      - command:
-        - /bin/sleep
-        - infinity
-        env:
-        - name: KUBERNETES_CLUSTER_DOMAIN
-          value: {{ quote .Values.kubernetesClusterDomain }}
-        envFrom:
-        - secretRef:
-            name: {{ include "retraced.auditlogSecretName" . }}
-        image: {{ .Values.dbutil.dbutil.image.repository }}:{{ .Values.dbutil.dbutil.image.tag
-          | default .Chart.AppVersion }}
-        name: dbutil
-        resources: {}
+        - name: dbutil
+          image: {{ .Values.dbutil.image.repository }}:{{ .Values.dbutil.image.tag | default .Chart.AppVersion }}
+          command:
+            - /bin/sleep
+            - infinity
+          env:
+            - name: KUBERNETES_CLUSTER_DOMAIN
+              value: {{ quote .Values.kubernetesClusterDomain }}
+          envFrom:
+            - secretRef:
+                name: {{ include "retraced.auditlogSecretName" . }}
+          resources: {}

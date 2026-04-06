@@ -43,7 +43,8 @@ app.kubernetes.io/managed-by: {{ .Release.Service }}
 {{- end }}
 
 {{/*
-Selector labels
+Selector labels — used in matchLabels and pod template labels.
+Each deployment adds app.kubernetes.io/component inline to ensure unique selection.
 */}}
 {{- define "retraced.selectorLabels" -}}
 app.kubernetes.io/name: {{ include "retraced.name" . }}
@@ -75,7 +76,7 @@ If bootstrap.existingSecret is set, use that; otherwise use the chart-generated 
 {{- end }}
 
 {{/*
-Create the name of the service account to use
+Create the name of the service account to use.
 */}}
 {{- define "retraced.serviceAccountName" -}}
 {{- if .Values.serviceAccount.create }}

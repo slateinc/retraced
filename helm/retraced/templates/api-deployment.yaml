@@ -3,94 +3,83 @@ kind: Deployment
 metadata:
   name: {{ include "retraced.fullname" . }}-api
   labels:
-    retraceddev: "1"
-  {{- include "retraced.labels" . | nindent 4 }}
+    {{- include "retraced.labels" . | nindent 4 }}
+    app.kubernetes.io/component: api
 spec:
-  replicas: {{ .Values.api.replicas }}
+  replicas: {{ .Values.api.replicaCount }}
   selector:
     matchLabels:
-      retraceddev: "1"
-      tier: api
-    {{- include "retraced.selectorLabels" . | nindent 6 }}
+      {{- include "retraced.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: api
   template:
     metadata:
       labels:
-        app: auditlog
-        retraceddev: "1"
-        tier: api
-      {{- include "retraced.selectorLabels" . | nindent 8 }}
+        {{- include "retraced.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: api
     spec:
+      serviceAccountName: {{ include "retraced.serviceAccountName" . }}
       affinity:
         podAntiAffinity:
           preferredDuringSchedulingIgnoredDuringExecution:
-          - podAffinityTerm:
-              labelSelector:
-                matchExpressions:
-                - key: app
-                  operator: In
-                  values:
-                  - auditlog
-                - key: tier
-                  operator: In
-                  values:
-                  - api
-              topologyKey: kubernetes.io/hostname
-            weight: 1
-      containers:
-      - command:
-        - node
-        - --inspect=0.0.0.0
-        - build/src/index.js
-        env:
-        - name: BUGSNAG_TOKEN
-          valueFrom:
-            secretKeyRef:
-              key: API_TOKEN
-              name: {{ include "retraced.auditlogSecretName" . }}
-        - name: EXPORT_PAGE_SIZE_INTERNAL
-          value: {{ quote .Values.api.api.env.exportPageSizeInternal }}
-        - name: KUBERNETES_CLUSTER_DOMAIN
-          value: {{ quote .Values.kubernetesClusterDomain }}
-        envFrom:
-        - secretRef:
-            name: {{ include "retraced.auditlogSecretName" . }}
-        image: {{ .Values.api.api.image.repository }}:{{ .Values.api.api.image.tag | default
-          .Chart.AppVersion }}
-        imagePullPolicy: {{ .Values.api.api.imagePullPolicy }}
-        name: api
-        ports:
-        - containerPort: 3000
-          name: http
-          protocol: TCP
-        readinessProbe:
-          failureThreshold: 5
-          httpGet:
-            path: /healthz
-            port: 3000
-          periodSeconds: 30
-          successThreshold: 2
-          timeoutSeconds: 10
-        resources: {{- toYaml .Values.api.api.resources | nindent 10 }}
-        startupProbe:
-          failureThreshold: 5
-          httpGet:
-            path: /healthz
-            port: 3000
-          periodSeconds: 10
-          timeoutSeconds: 10
+            - weight: 1
+              podAffinityTerm:
+                topologyKey: kubernetes.io/hostname
+                labelSelector:
+                  matchLabels:
+                    {{- include "retraced.selectorLabels" . | nindent 20 }}
+                    app.kubernetes.io/component: api
       initContainers:
-      - args: {{- toYaml .Values.api.bootstrap.args | nindent 8 }}
-        command:
-        - /bin/sh
-        env:
-        - name: KUBERNETES_CLUSTER_DOMAIN
-          value: {{ quote .Values.kubernetesClusterDomain }}
-        envFrom:
-        - secretRef:
-            name: {{ include "retraced.auditlogSecretName" . }}
-        - secretRef:
-            name: {{ include "retraced.bootstrapSecretName" . }}
-        image: {{ .Values.api.bootstrap.image.repository }}:{{ .Values.api.bootstrap.image.tag
-          | default .Chart.AppVersion }}
-        name: bootstrap
-        resources: {}
+        - name: bootstrap
+          image: {{ .Values.api.bootstrap.image.repository }}:{{ .Values.api.bootstrap.image.tag | default .Chart.AppVersion }}
+          command:
+            - /bin/sh
+          args: {{- toYaml .Values.api.bootstrap.args | nindent 12 }}
+          env:
+            - name: KUBERNETES_CLUSTER_DOMAIN
+              value: {{ quote .Values.kubernetesClusterDomain }}
+          envFrom:
+            - secretRef:
+                name: {{ include "retraced.auditlogSecretName" . }}
+            - secretRef:
+                name: {{ include "retraced.bootstrapSecretName" . }}
+          resources: {}
+      containers:
+        - name: api
+          image: {{ .Values.api.image.repository }}:{{ .Values.api.image.tag | default .Chart.AppVersion }}
+          imagePullPolicy: {{ .Values.api.image.pullPolicy }}
+          command:
+            - node
+            - build/src/index.js
+          env:
+            - name: BUGSNAG_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "retraced.auditlogSecretName" . }}
+                  key: API_TOKEN
+            - name: EXPORT_PAGE_SIZE_INTERNAL
+              value: {{ quote .Values.api.env.exportPageSizeInternal }}
+            - name: KUBERNETES_CLUSTER_DOMAIN
+              value: {{ quote .Values.kubernetesClusterDomain }}
+          envFrom:
+            - secretRef:
+                name: {{ include "retraced.auditlogSecretName" . }}
+          ports:
+            - name: http
+              containerPort: 3000
+              protocol: TCP
+          startupProbe:
+            httpGet:
+              path: /healthz
+              port: 3000
+            failureThreshold: 5
+            periodSeconds: 10
+            timeoutSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 3000
+            failureThreshold: 5
+            periodSeconds: 30
+            successThreshold: 2
+            timeoutSeconds: 10
+          resources: {{- toYaml .Values.api.resources | nindent 12 }}
