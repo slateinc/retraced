@@ -6,7 +6,7 @@ metadata:
     {{- include "retraced.labels" . | nindent 4 }}
     app.kubernetes.io/component: dbutil
 spec:
-  replicas: {{ .Values.dbutil.replicaCount }}
+  replicas: {{ .Values.dbutil.replicas }}
   selector:
     matchLabels:
       {{- include "retraced.selectorLabels" . | nindent 6 }}

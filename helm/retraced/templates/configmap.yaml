@@ -6,25 +6,25 @@ metadata:
     {{- include "retraced.labels" . | nindent 4 }}
 data:
   API_BASE_URL_PATH: {{ required "config.apiBaseUrlPath is required" .Values.config.apiBaseUrlPath | quote }}
-  GEOIPUPDATE_DB_DIR: {{ required "config.geoipupdateDbDir is required" .Values.config.geoipupdateDbDir | quote }}
-  GEOIPUPDATE_EDITION_IDS: {{ required "config.geoipupdateEditionIds is required" .Values.config.geoipupdateEditionIds | quote }}
-  GEOIPUPDATE_FREQUENCY: {{ required "config.geoipupdateFrequency is required" .Values.config.geoipupdateFrequency | quote }}
-  GEOIPUPDATE_USE_MMDB: {{ .Values.config.geoipupdateUseMmdb | quote }}
-  GEOIPUPDATE_VERBOSE: {{ required "config.geoipupdateVerbose is required" .Values.config.geoipupdateVerbose | quote }}
   LOG_LEVEL: {{ required "config.logLevel is required" .Values.config.logLevel | quote }}
-  NSQD_HOST: {{ required "config.nsqdHost is required" .Values.config.nsqdHost | quote }}
-  NSQD_HTTP_PORT: {{ required "config.nsqdHttpPort is required" .Values.config.nsqdHttpPort | quote }}
-  NSQD_TCP_PORT: {{ required "config.nsqdTcpPort is required" .Values.config.nsqdTcpPort | quote }}
-  POSTGRES_DATABASE: {{ required "config.postgresDatabase is required" .Values.config.postgresDatabase | quote }}
-  POSTGRES_HOST: {{ required "config.postgresHost is required" .Values.config.postgresHost | quote }}
-  POSTGRES_POOL_SIZE: {{ required "config.postgresPoolSize is required" .Values.config.postgresPoolSize | quote }}
-  POSTGRES_PORT: {{ required "config.postgresPort is required" .Values.config.postgresPort | quote }}
-  POSTGRES_USER: {{ required "config.postgresUser is required" .Values.config.postgresUser | quote }}
   RETRACED_API_BASE: {{ required "config.retracedApiBase is required" .Values.config.retracedApiBase | quote }}
   RETRACED_DISABLE_GEOSYNC: {{ .Values.config.retracedDisableGeosync | quote }}
   STAGE: {{ .Values.config.stage | quote }}
-  STATSD_HOST: {{ .Values.config.statsdHost | quote }}
-  STATSD_PORT: {{ .Values.config.statsdPort | quote }}
+  POSTGRES_HOST: {{ required "postgres.host is required" .Values.postgres.host | quote }}
+  POSTGRES_PORT: {{ required "postgres.port is required" .Values.postgres.port | quote }}
+  POSTGRES_DATABASE: {{ required "postgres.database is required" .Values.postgres.database | quote }}
+  POSTGRES_USER: {{ required "postgres.user is required" .Values.postgres.user | quote }}
+  POSTGRES_POOL_SIZE: {{ required "postgres.poolSize is required" .Values.postgres.poolSize | quote }}
+  NSQD_HOST: {{ required "nsqd.host is required" .Values.nsqd.host | quote }}
+  NSQD_HTTP_PORT: {{ required "nsqd.httpPort is required" .Values.nsqd.httpPort | quote }}
+  NSQD_TCP_PORT: {{ required "nsqd.tcpPort is required" .Values.nsqd.tcpPort | quote }}
+  STATSD_HOST: {{ .Values.statsd.host | quote }}
+  STATSD_PORT: {{ .Values.statsd.port | quote }}
+  GEOIPUPDATE_DB_DIR: {{ required "geoipupdate.dbDir is required" .Values.geoipupdate.dbDir | quote }}
+  GEOIPUPDATE_EDITION_IDS: {{ required "geoipupdate.editionIds is required" .Values.geoipupdate.editionIds | quote }}
+  GEOIPUPDATE_FREQUENCY: {{ required "geoipupdate.frequency is required" .Values.geoipupdate.frequency | quote }}
+  GEOIPUPDATE_USE_MMDB: {{ .Values.geoipupdate.useMmdb | quote }}
+  GEOIPUPDATE_VERBOSE: {{ required "geoipupdate.verbose is required" .Values.geoipupdate.verbose | quote }}
   BOOTSTRAP_ENVIRONMENT_ID: {{ required "bootstrap.config.environmentId is required" .Values.bootstrap.config.environmentId | quote }}
   BOOTSTRAP_PROJECT_ID: {{ required "bootstrap.config.projectId is required" .Values.bootstrap.config.projectId | quote }}
   BOOTSTRAP_PROJECT_NAME: {{ required "bootstrap.config.projectName is required" .Values.bootstrap.config.projectName | quote }}

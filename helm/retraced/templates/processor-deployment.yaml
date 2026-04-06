@@ -6,7 +6,7 @@ metadata:
     {{- include "retraced.labels" . | nindent 4 }}
     app.kubernetes.io/component: processor
 spec:
-  replicas: {{ .Values.processor.replicaCount }}
+  replicas: {{ .Values.processor.replicas }}
   selector:
     matchLabels:
       {{- include "retraced.selectorLabels" . | nindent 6 }}
@@ -45,7 +45,7 @@ spec:
                   name: {{ include "retraced.credentialsSecretName" . }}
                   key: PROCESSOR_TOKEN
             - name: PG_SEARCH
-              value: {{ quote .Values.processor.env.pgSearch }}
+              value: {{ if not .Values.elasticsearch.enabled }}"TRUE"{{ else }}""{{ end }}
             - name: KUBERNETES_CLUSTER_DOMAIN
               value: {{ quote .Values.kubernetesClusterDomain }}
             {{- with .Values.extraEnv }}

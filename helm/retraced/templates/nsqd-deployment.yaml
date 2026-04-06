@@ -6,7 +6,7 @@ metadata:
     {{- include "retraced.labels" . | nindent 4 }}
     app.kubernetes.io/component: nsqd
 spec:
-  replicas: {{ .Values.nsqd.replicaCount }}
+  replicas: {{ .Values.nsqd.replicas }}
   selector:
     matchLabels:
       {{- include "retraced.selectorLabels" . | nindent 6 }}

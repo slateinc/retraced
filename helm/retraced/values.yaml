@@ -20,30 +20,15 @@ serviceAccount:
   # -- Annotations to add to the service account (e.g. for IRSA)
   annotations: {}
 
-# These values are safe to commit and are visible in plain text.
+# -- Miscellaneous non-sensitive configuration (rendered into the shared ConfigMap).
 config:
   apiBaseUrlPath: "/auditlog"
-  geoipupdateDbDir: "/etc/mmdb"
-  geoipupdateEditionIds: "GeoLite2-City"
-  geoipupdateFrequency: "168"
-  geoipupdateUseMmdb: ""
-  geoipupdateVerbose: "1"
   logLevel: "info"
-  nsqdHost: "retraced-nsqd"
-  nsqdHttpPort: "4151"
-  nsqdTcpPort: "4150"
-  postgresDatabase: "retraced"
-  postgresHost: "retraced-postgres"
-  postgresPoolSize: "10"
-  postgresPort: "5434"
-  postgresUser: "retraced"
   retracedApiBase: "http://localhost:3000/auditlog"
   retracedDisableGeosync: ""
   stage: ""
-  statsdHost: ""
-  statsdPort: ""
 
-# -- Sensitive credentials, rendered as a Secret when createSecret is true.
+# -- Sensitive credentials rendered as a Secret when createSecret is true.
 # Set createSecret: false and use extraEnv/extraEnvFrom to supply credentials from
 # your own secret management solution.
 credentials:
@@ -53,30 +38,44 @@ credentials:
   adminRootToken: "dev"
   apiToken: ""
   dbToken: ""
-  # -- May contain embedded credentials (e.g. http://user:password@host:9200)
-  elasticsearchNodes: "http://user:password@retraced-elasticsearch:9200"
-  geoipupdateAccountId: ""
-  geoipupdateLicenseKey: ""
-  hmacSecretAdmin: ""
-  hmacSecretViewer: ""
-  mandrillKey: ""
-  postgresPassword: ""
   processorToken: ""
+  mandrillKey: ""
 
-# -- Extra environment variables injected into all application pods.
-# Accepts the full Kubernetes env var spec, so you can reference any secret or configmap.
-# Example:
-#   extraEnv:
-#     - name: POSTGRES_PASSWORD
-#       valueFrom:
-#         secretKeyRef:
-#           name: my-pg-secret
-#           key: password
-#     - name: HMAC_SECRET_ADMIN
-#       valueFrom:
-#         secretKeyRef:
-#           name: my-hmac-secret
-#           key: admin
+postgres:
+  host: "retraced-postgres"
+  port: "5434"
+  database: "retraced"
+  user: "retraced"
+  poolSize: "10"
+  # -- Sensitive — rendered into the credentials Secret.
+  password: ""
+
+hmac:
+  # -- Sensitive — rendered into the credentials Secret.
+  secretAdmin: ""
+  secretViewer: ""
+
+statsd:
+  host: ""
+  port: ""
+
+geoipupdate:
+  dbDir: "/etc/mmdb"
+  editionIds: "GeoLite2-City"
+  frequency: "168"
+  useMmdb: ""
+  verbose: "1"
+  # -- Sensitive — rendered into the credentials Secret.
+  accountId: ""
+  licenseKey: ""
+
+elasticsearch:
+  # -- Set to false to skip the Elasticsearch migration job (e.g. when using PG_SEARCH mode)
+  enabled: true
+  # -- Elasticsearch connection string. May contain embedded credentials.
+  # Rendered into the credentials Secret.
+  nodes: "http://user:password@retraced-elasticsearch:9200"
+
 # -- Extra Kubernetes manifests to deploy alongside the chart.
 # Each item is passed through `tpl`, so Helm templating is supported.
 # Example:
@@ -90,6 +89,15 @@ credentials:
 #           foo: bar
 extraDeploy: []
 
+# -- Extra environment variables injected into all application pods.
+# Accepts the full Kubernetes env var spec, so you can reference any secret or configmap.
+# Example:
+#   extraEnv:
+#     - name: POSTGRES_PASSWORD
+#       valueFrom:
+#         secretKeyRef:
+#           name: my-pg-secret
+#           key: password
 extraEnv: []
 
 # -- Extra envFrom sources mounted into all application pods.
@@ -125,13 +133,9 @@ bootstrap:
       --projectId     "$BOOTSTRAP_PROJECT_ID" --environmentId "$BOOTSTRAP_ENVIRONMENT_ID"
       --apiKey        "$BOOTSTRAP_API_TOKEN"
 
-elasticsearch:
-  # -- Set to false to skip the Elasticsearch migration job (e.g. when using PG_SEARCH mode)
-  enabled: true
-
 # -- API server deployment configuration
 api:
-  replicaCount: 1
+  replicas: 1
   image:
     repository: retracedhq/retraced
     tag: "1.12.1"
@@ -152,13 +156,12 @@ api:
 
 # -- Processor deployment configuration
 processor:
-  replicaCount: 1
+  replicas: 1
   image:
     repository: retracedhq/retraced
     tag: "1.12.1"
     pullPolicy: IfNotPresent
   env:
-    pgSearch: ""
     tmpdir: /tmp
   resources:
     limits:
@@ -168,7 +171,7 @@ processor:
 
 # -- Cron deployment configuration
 cron:
-  replicaCount: 1
+  replicas: 1
   image:
     repository: retracedhq/retraced
     tag: "1.12.1"
@@ -181,14 +184,18 @@ cron:
 
 # -- Database utility pod (maintenance/debug container that runs indefinitely)
 dbutil:
-  replicaCount: 1
+  replicas: 1
   image:
     repository: retracedhq/retraced
     tag: "1.12.1"
 
 # -- NSQ daemon configuration
 nsqd:
-  replicaCount: 1
+  # -- Connection config used by other services to reach nsqd.
+  host: "retraced-nsqd"
+  httpPort: "4151"
+  tcpPort: "4150"
+  replicas: 1
   image:
     repository: nsqio/nsq
     tag: "v1.2.1"
