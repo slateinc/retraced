@@ -77,6 +77,19 @@ credentials:
 #         secretKeyRef:
 #           name: my-hmac-secret
 #           key: admin
+# -- Extra Kubernetes manifests to deploy alongside the chart.
+# Each item is passed through `tpl`, so Helm templating is supported.
+# Example:
+#   extraDeploy:
+#     - apiVersion: v1
+#         kind: ConfigMap
+#         metadata:
+#           name: my-extra-config
+#           namespace: {{ .Release.Namespace }}
+#         data:
+#           foo: bar
+extraDeploy: []
+
 extraEnv: []
 
 # -- Extra envFrom sources mounted into all application pods.
