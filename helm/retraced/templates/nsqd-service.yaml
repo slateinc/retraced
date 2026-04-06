@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "retraced.fullname" . }}-nsqd
+  labels:
+    {{- include "retraced.labels" . | nindent 4 }}
+    app.kubernetes.io/component: nsqd
+spec:
+  type: {{ .Values.nsqd.service.type }}
+  selector:
+    {{- include "retraced.selectorLabels" . | nindent 4 }}
+    app.kubernetes.io/component: nsqd
+  ports:
+    {{- toYaml .Values.nsqd.service.ports | nindent 4 }}

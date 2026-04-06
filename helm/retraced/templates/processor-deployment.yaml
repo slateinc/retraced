@@ -3,92 +3,83 @@ kind: Deployment
 metadata:
   name: {{ include "retraced.fullname" . }}-processor
   labels:
-    retraceddev: "1"
-  {{- include "retraced.labels" . | nindent 4 }}
+    {{- include "retraced.labels" . | nindent 4 }}
+    app.kubernetes.io/component: processor
 spec:
   replicas: {{ .Values.processor.replicas }}
   selector:
     matchLabels:
-      retraceddev: "1"
-      tier: processor
-    {{- include "retraced.selectorLabels" . | nindent 6 }}
+      {{- include "retraced.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: processor
   template:
     metadata:
       labels:
-        app: auditlog
-        retraceddev: "1"
-        tier: processor
-      {{- include "retraced.selectorLabels" . | nindent 8 }}
+        {{- include "retraced.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: processor
     spec:
+      serviceAccountName: {{ include "retraced.serviceAccountName" . }}
       affinity:
         podAntiAffinity:
           preferredDuringSchedulingIgnoredDuringExecution:
-          - podAffinityTerm:
-              labelSelector:
-                matchExpressions:
-                - key: app
-                  operator: In
-                  values:
-                  - auditlog
-                - key: tier
-                  operator: In
-                  values:
-                  - processor
-              topologyKey: kubernetes.io/hostname
-            weight: 2
+            - weight: 2
+              podAffinityTerm:
+                topologyKey: kubernetes.io/hostname
+                labelSelector:
+                  matchLabels:
+                    {{- include "retraced.selectorLabels" . | nindent 20 }}
+                    app.kubernetes.io/component: processor
       containers:
-      - command:
-        - node
-        - --inspect=0.0.0.0
-        - build/src/_processor/index.js
-        env:
-        - name: TMPDIR
-          value: {{ quote .Values.processor.processor.env.tmpdir }}
-        - name: BUGSNAG_TOKEN
-          valueFrom:
-            secretKeyRef:
-              key: PROCESSOR_TOKEN
-              name: {{ include "retraced.auditlogSecretName" . }}
-        - name: PG_SEARCH
-          value: {{ quote .Values.processor.processor.env.pgSearch }}
-        - name: KUBERNETES_CLUSTER_DOMAIN
-          value: {{ quote .Values.kubernetesClusterDomain }}
-        envFrom:
-        - secretRef:
-            name: {{ include "retraced.auditlogSecretName" . }}
-        image: {{ .Values.processor.processor.image.repository }}:{{ .Values.processor.processor.image.tag
-          | default .Chart.AppVersion }}
-        imagePullPolicy: {{ .Values.processor.processor.imagePullPolicy }}
-        livenessProbe:
-          failureThreshold: 5
-          httpGet:
-            path: /livez
-            port: 3000
-          periodSeconds: 60
-        name: processor
-        ports:
-        - containerPort: 3000
-          name: http
-          protocol: TCP
-        readinessProbe:
-          failureThreshold: 5
-          httpGet:
-            path: /healthz
-            port: 3000
-          periodSeconds: 30
-          successThreshold: 2
-          timeoutSeconds: 10
-        resources: {{- toYaml .Values.processor.processor.resources | nindent 10 }}
-        startupProbe:
-          failureThreshold: 5
-          httpGet:
-            path: /healthz
-            port: 3000
-          periodSeconds: 10
-          timeoutSeconds: 10
-        volumeMounts:
-        - mountPath: /tmp
-          name: tmpdir
+        - name: processor
+          image: {{ include "retraced.image" (dict "image" .Values.processor.image "global" .Values.global "default" .Chart.AppVersion) }}
+          imagePullPolicy: {{ .Values.processor.image.pullPolicy }}
+          command:
+            - node
+            - build/src/_processor/index.js
+          envFrom: {{- include "retraced.envFrom" . | nindent 12 }}
+          env:
+            - name: TMPDIR
+              value: {{ quote .Values.processor.env.tmpdir }}
+            - name: BUGSNAG_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "retraced.credentialsSecretName" . }}
+                  key: PROCESSOR_TOKEN
+            - name: PG_SEARCH
+              value: {{ if not .Values.elasticsearch.enabled }}"TRUE"{{ else }}""{{ end }}
+            - name: KUBERNETES_CLUSTER_DOMAIN
+              value: {{ quote .Values.kubernetesClusterDomain }}
+            {{- with .Values.extraEnv }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+          ports:
+            - name: http
+              containerPort: 3000
+              protocol: TCP
+          startupProbe:
+            httpGet:
+              path: /healthz
+              port: 3000
+            failureThreshold: 5
+            periodSeconds: 10
+            timeoutSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 3000
+            failureThreshold: 5
+            periodSeconds: 30
+            successThreshold: 2
+            timeoutSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /livez
+              port: 3000
+            failureThreshold: 5
+            periodSeconds: 60
+          resources: {{- toYaml .Values.processor.resources | nindent 12 }}
+          volumeMounts:
+            - name: tmpdir
+              mountPath: /tmp
       volumes:
-      - emptyDir: {}
-        name: tmpdir
+        - name: tmpdir
+          emptyDir: {}

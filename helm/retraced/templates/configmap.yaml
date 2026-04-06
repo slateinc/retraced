@@ -1,0 +1,30 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "retraced.configMapName" . }}
+  labels:
+    {{- include "retraced.labels" . | nindent 4 }}
+data:
+  API_BASE_URL_PATH: {{ required "config.apiBaseUrlPath is required" .Values.config.apiBaseUrlPath | quote }}
+  LOG_LEVEL: {{ required "config.logLevel is required" .Values.config.logLevel | quote }}
+  RETRACED_API_BASE: {{ required "config.retracedApiBase is required" .Values.config.retracedApiBase | quote }}
+  RETRACED_DISABLE_GEOSYNC: {{ .Values.config.retracedDisableGeosync | quote }}
+  STAGE: {{ .Values.config.stage | quote }}
+  POSTGRES_HOST: {{ required "postgres.host is required" .Values.postgres.host | quote }}
+  POSTGRES_PORT: {{ required "postgres.port is required" .Values.postgres.port | quote }}
+  POSTGRES_DATABASE: {{ required "postgres.database is required" .Values.postgres.database | quote }}
+  POSTGRES_USER: {{ required "postgres.user is required" .Values.postgres.user | quote }}
+  POSTGRES_POOL_SIZE: {{ required "postgres.poolSize is required" .Values.postgres.poolSize | quote }}
+  NSQD_HOST: {{ required "nsqd.host is required" .Values.nsqd.host | quote }}
+  NSQD_HTTP_PORT: {{ required "nsqd.httpPort is required" .Values.nsqd.httpPort | quote }}
+  NSQD_TCP_PORT: {{ required "nsqd.tcpPort is required" .Values.nsqd.tcpPort | quote }}
+  STATSD_HOST: {{ .Values.statsd.host | quote }}
+  STATSD_PORT: {{ .Values.statsd.port | quote }}
+  GEOIPUPDATE_DB_DIR: {{ required "geoipupdate.dbDir is required" .Values.geoipupdate.dbDir | quote }}
+  GEOIPUPDATE_EDITION_IDS: {{ required "geoipupdate.editionIds is required" .Values.geoipupdate.editionIds | quote }}
+  GEOIPUPDATE_FREQUENCY: {{ required "geoipupdate.frequency is required" .Values.geoipupdate.frequency | quote }}
+  GEOIPUPDATE_USE_MMDB: {{ .Values.geoipupdate.useMmdb | quote }}
+  GEOIPUPDATE_VERBOSE: {{ required "geoipupdate.verbose is required" .Values.geoipupdate.verbose | quote }}
+  BOOTSTRAP_ENVIRONMENT_ID: {{ required "bootstrap.config.environmentId is required" .Values.bootstrap.config.environmentId | quote }}
+  BOOTSTRAP_PROJECT_ID: {{ required "bootstrap.config.projectId is required" .Values.bootstrap.config.projectId | quote }}
+  BOOTSTRAP_PROJECT_NAME: {{ required "bootstrap.config.projectName is required" .Values.bootstrap.config.projectName | quote }}

@@ -1,153 +1,234 @@
-api:
-  api:
-    env:
-      exportPageSizeInternal: "2"
-    image:
-      repository: retracedhq/retraced
-      tag: 1.12.1
-    imagePullPolicy: IfNotPresent
-    resources:
-      limits:
-        cpu: "1"
-      requests:
-        cpu: 100m
-  bootstrap:
-    args:
+global:
+  # -- Global image registry used as a pull-through cache for all images.
+  # When set, every image reference becomes <imageRegistry>/<repository>:<tag>.
+  # Example: 775362322281.dkr.ecr.us-east-1.amazonaws.com/docker-hub
+  imageRegistry: ""
+
+# -- String to partially override the chart name
+nameOverride: ""
+# -- String to fully override the release name used for resource names
+fullnameOverride: ""
+
+# -- Kubernetes cluster domain
+kubernetesClusterDomain: cluster.local
+
+serviceAccount:
+  # -- Create a service account for the application pods
+  create: true
+  # -- Name of the service account. Defaults to the fullname if empty.
+  name: ""
+  # -- Annotations to add to the service account (e.g. for IRSA)
+  annotations: {}
+
+# -- Miscellaneous non-sensitive configuration (rendered into the shared ConfigMap).
+config:
+  apiBaseUrlPath: "/auditlog"
+  logLevel: "info"
+  retracedApiBase: "http://localhost:3000/auditlog"
+  retracedDisableGeosync: ""
+  stage: ""
+
+# -- Sensitive credentials rendered as a Secret when createSecret is true.
+# Set createSecret: false and use extraEnv/extraEnvFrom to supply credentials from
+# your own secret management solution.
+credentials:
+  # -- Create a credentials secret from the values below.
+  # Set to false when managing secrets externally (e.g. ESO, Sealed Secrets, Vault).
+  createSecret: true
+  adminRootToken: "dev"
+  apiToken: ""
+  dbToken: ""
+  processorToken: ""
+  mandrillKey: ""
+
+postgres:
+  host: "retraced-postgres"
+  port: "5434"
+  database: "retraced"
+  user: "retraced"
+  poolSize: "10"
+  # -- Sensitive — rendered into the credentials Secret.
+  password: ""
+
+hmac:
+  # -- Sensitive — rendered into the credentials Secret.
+  secretAdmin: ""
+  secretViewer: ""
+
+statsd:
+  host: ""
+  port: ""
+
+geoipupdate:
+  dbDir: "/etc/mmdb"
+  editionIds: "GeoLite2-City"
+  frequency: "168"
+  useMmdb: ""
+  verbose: "1"
+  # -- Sensitive — rendered into the credentials Secret.
+  accountId: ""
+  licenseKey: ""
+
+elasticsearch:
+  # -- Set to false to skip the Elasticsearch migration job (e.g. when using PG_SEARCH mode)
+  enabled: true
+  # -- Elasticsearch connection string. May contain embedded credentials.
+  # Rendered into the credentials Secret.
+  nodes: "http://user:password@retraced-elasticsearch:9200"
+
+# -- Extra Kubernetes manifests to deploy alongside the chart.
+# Each item is passed through `tpl`, so Helm templating is supported.
+# Example:
+#   extraDeploy:
+#     - apiVersion: v1
+#         kind: ConfigMap
+#         metadata:
+#           name: my-extra-config
+#           namespace: {{ .Release.Namespace }}
+#         data:
+#           foo: bar
+extraDeploy: []
+
+# -- Extra environment variables injected into all application pods.
+# Accepts the full Kubernetes env var spec, so you can reference any secret or configmap.
+# Example:
+#   extraEnv:
+#     - name: POSTGRES_PASSWORD
+#       valueFrom:
+#         secretKeyRef:
+#           name: my-pg-secret
+#           key: password
+extraEnv: []
+
+# -- Extra envFrom sources mounted into all application pods.
+# Use this to mount entire external secrets or configmaps as environment variables.
+# Example:
+#   extraEnvFrom:
+#     - secretRef:
+#         name: my-existing-credentials
+#     - configMapRef:
+#         name: my-extra-config
+extraEnvFrom: []
+
+# -- Bootstrap init container configuration.
+bootstrap:
+  # -- Non-sensitive bootstrap config (rendered into the shared ConfigMap).
+  config:
+    environmentId: "dev"
+    projectId: "dev"
+    projectName: "dev"
+  # -- Bootstrap API token (sensitive). Set createSecret: false and supply
+  # BOOTSTRAP_API_TOKEN via extraEnv when managing secrets externally.
+  credentials:
+    createSecret: true
+    apiToken: "dev"
+  # -- Image for the bootstrap init container.
+  image:
+    repository: retracedhq/retraced
+    tag: "1.12.1"
+  # -- Command args passed to the bootstrap init container.
+  args:
     - -c
     - ./build/src/retracedctl bootstrap --projectName   "$BOOTSTRAP_PROJECT_NAME"
       --projectId     "$BOOTSTRAP_PROJECT_ID" --environmentId "$BOOTSTRAP_ENVIRONMENT_ID"
       --apiKey        "$BOOTSTRAP_API_TOKEN"
-    image:
-      repository: retracedhq/retraced
-      tag: 1.12.1
-  ports:
-  - name: http
-    port: 3000
-    targetPort: 3000
+
+# -- API server deployment configuration
+api:
   replicas: 1
-  type: LoadBalancer
-apiInternal:
-  ports:
-  - name: http
+  image:
+    repository: retracedhq/retraced
+    tag: "1.12.1"
+    pullPolicy: IfNotPresent
+  service:
+    type: LoadBalancer
     port: 3000
-    targetPort: 3000
-  type: ClusterIP
-auditlog:
-  # -- Use an existing secret for auditlog configuration instead of creating one.
-  # The secret must contain all required keys (POSTGRES_HOST, HMAC_SECRET_ADMIN, etc.)
-  existingSecret: ""
-  adminRootToken: "dev"
-  apiBaseUrlPath: "/auditlog"
-  apiToken: ""
-  dbToken: ""
-  elasticsearchNodes: "http://user:password@retraced-elasticsearch:9200"
-  geoipupdateAccountId: ""
-  geoipupdateDbDir: "/etc/mmdb"
-  geoipupdateEditionIds: "GeoLite2-City"
-  geoipupdateFrequency: "168"
-  geoipupdateLicenseKey: ""
-  geoipupdateUseMmdb: ""
-  geoipupdateVerbose: "1"
-  hmacSecretAdmin: "xxxxxxx"
-  hmacSecretViewer: "xxxxxxxxx"
-  logLevel: "info"
-  mandrillKey: ""
-  nsqdHost: "retraced-nsqd"
-  nsqdHttpPort: "4151"
-  nsqdTcpPort: "4150"
-  postgresDatabase: "retraced"
-  postgresHost: "retraced-postgres"
-  postgresPassword: "password"
-  postgresPoolSize: "10"
-  postgresPort: "5434"
-  postgresUser: "retraced"
-  processorToken: ""
-  retracedApiBase: "http://localhost:3000/auditlog"
-  retracedDisableGeosync: ""
-  stage: ""
-  statsdHost: ""
-  statsdPort: ""
-bootstrap:
-  # -- Use an existing secret for bootstrap configuration instead of creating one.
-  # The secret must contain BOOTSTRAP_API_TOKEN, BOOTSTRAP_ENVIRONMENT_ID, etc.
-  existingSecret: ""
-  bootstrapApiToken: "dev"
-  bootstrapEnvironmentId: "dev"
-  bootstrapProjectId: "dev"
-  bootstrapProjectName: "dev"
+  internalService:
+    type: ClusterIP
+    port: 3000
+  env:
+    exportPageSizeInternal: "2"
+  resources:
+    limits:
+      cpu: "1"
+    requests:
+      cpu: 100m
+
+# -- Processor deployment configuration
+processor:
+  replicas: 1
+  image:
+    repository: retracedhq/retraced
+    tag: "1.12.1"
+    pullPolicy: IfNotPresent
+  env:
+    tmpdir: /tmp
+  resources:
+    limits:
+      cpu: "1"
+    requests:
+      cpu: 100m
+
+# -- Cron deployment configuration
 cron:
-  cron:
-    image:
-      repository: retracedhq/retraced
-      tag: v1.12.1
-    imagePullPolicy: IfNotPresent
-    resources:
-      limits:
-        cpu: 100m
-      requests:
-        cpu: 10m
   replicas: 1
+  image:
+    repository: retracedhq/retraced
+    tag: "1.12.1"
+    pullPolicy: IfNotPresent
+  resources:
+    limits:
+      cpu: 100m
+    requests:
+      cpu: 10m
+
+# -- Database utility pod (maintenance/debug container that runs indefinitely)
 dbutil:
-  dbutil:
-    image:
-      repository: retracedhq/retraced
-      tag: 1.12.1
   replicas: 1
-elasticsearch:
-  # -- Set to false to disable Elasticsearch migration job (when using PG_SEARCH mode)
-  enabled: true
-kubernetesClusterDomain: cluster.local
-migrateEs:
-  db:
-    env:
-      schemaPath: /app/build/migrations/es
-    image:
-      repository: retracedhq/retraced
-      tag: 1.12.1
-migratePg:
-  db:
-    env:
-      schemaPath: /app/build/migrations/pg/*
-    image:
-      repository: retracedhq/retraced
-      tag: 1.12.1
+  image:
+    repository: retracedhq/retraced
+    tag: "1.12.1"
+
+# -- NSQ daemon configuration
 nsqd:
-  nsqd:
-    args:
+  # -- Connection config used by other services to reach nsqd.
+  host: "retraced-nsqd"
+  httpPort: "4151"
+  tcpPort: "4150"
+  replicas: 1
+  image:
+    repository: nsqio/nsq
+    tag: "v1.2.1"
+  args:
     - -c
     - nsqd -statsd-address ${STATSD_HOST}:${STATSD_PORT} -statsd-prefix "nsqd."
-    image:
-      repository: nsqio/nsq
-      tag: v1.2.1
-    resources:
-      limits:
-        cpu: "1"
-      requests:
-        cpu: 100m
-  ports:
-  - name: tcp
-    port: 4150
-    targetPort: 4150
-  - name: http
-    port: 4151
-    targetPort: 4151
-  replicas: 1
-  type: ClusterIP
-processor:
-  processor:
-    env:
-      pgSearch: ""
-      tmpdir: /tmp
-    image:
-      repository: retracedhq/retraced
-      tag: 1.12.1
-    imagePullPolicy: IfNotPresent
-    resources:
-      limits:
-        cpu: "1"
-      requests:
-        cpu: 100m
-  replicas: 1
-pvc:
-  mmdbdir:
-    storageRequest: 1Gi
+  service:
+    type: ClusterIP
+    ports:
+      - name: tcp
+        port: 4150
+        targetPort: 4150
+      - name: http
+        port: 4151
+        targetPort: 4151
+  resources:
+    limits:
+      cpu: "1"
+    requests:
+      cpu: 100m
+
+# -- PostgreSQL migration job configuration
+migratePg:
+  image:
+    repository: retracedhq/retraced
+    tag: "1.12.1"
+  env:
+    schemaPath: /app/build/migrations/pg/*
+
+# -- Elasticsearch migration job configuration
+migrateEs:
+  image:
+    repository: retracedhq/retraced
+    tag: "1.12.1"
+  env:
+    schemaPath: /app/build/migrations/es
