@@ -1,0 +1,14 @@
+{{- if .Values.admin.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "retraced.adminConfigMapName" . }}
+  labels:
+    {{- include "retraced.labels" . | nindent 4 }}
+    app.kubernetes.io/component: admin
+data:
+  RETRACED_HOST_URL: {{ required "admin.config.retracedHostUrl is required when admin is enabled" .Values.admin.config.retracedHostUrl | quote }}
+  RETRACED_EXTERNAL_URL: {{ .Values.admin.config.retracedExternalUrl | quote }}
+  NEXTAUTH_URL: {{ required "admin.config.nextauthUrl is required when admin is enabled" .Values.admin.config.nextauthUrl | quote }}
+  NEXTAUTH_ACL: {{ .Values.admin.config.nextauthAcl | quote }}
+{{- end }}

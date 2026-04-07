@@ -110,6 +110,35 @@ checksum/secret: {{ include (print $.Template.BasePath "/auditlog-secret.yaml") 
 {{- end }}
 
 {{/*
+Name of the admin portal config ConfigMap.
+*/}}
+{{- define "retraced.adminConfigMapName" -}}
+{{- include "retraced.fullname" . }}-admin-config
+{{- end }}
+
+{{/*
+Name of the admin portal credentials Secret.
+*/}}
+{{- define "retraced.adminCredentialsSecretName" -}}
+{{- include "retraced.fullname" . }}-admin-credentials
+{{- end }}
+
+{{/*
+envFrom block for the admin portal pod.
+*/}}
+{{- define "retraced.adminEnvFrom" -}}
+- configMapRef:
+    name: {{ include "retraced.adminConfigMapName" . }}
+{{- if .Values.admin.credentials.createSecret }}
+- secretRef:
+    name: {{ include "retraced.adminCredentialsSecretName" . }}
+{{- end }}
+{{- with .Values.admin.extraEnvFrom }}
+{{- toYaml . | nindent 0 }}
+{{- end }}
+{{- end }}
+
+{{/*
 Standard envFrom block used by all application pods.
 Mounts the config ConfigMap, the credentials Secret, and any user-supplied extraEnvFrom sources.
 */}}

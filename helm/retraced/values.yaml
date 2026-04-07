@@ -232,3 +232,55 @@ migrateEs:
     tag: "1.12.1"
   env:
     schemaPath: /app/build/migrations/es
+
+# -- Admin portal (BoxyHQ Jackson) configuration.
+# The admin portal provides a UI for managing the Retraced audit log service.
+admin:
+  # -- Set to true to deploy the admin portal.
+  enabled: false
+  replicas: 1
+  image:
+    repository: boxyhq/jackson
+    tag: "1.30.0"
+    pullPolicy: IfNotPresent
+
+  # -- Non-sensitive admin portal configuration (rendered into its own ConfigMap).
+  config:
+    # -- Internal URL of the Retraced API, used for server-side calls from the admin portal.
+    retracedHostUrl: ""
+    # -- External/public URL of the Retraced API, used for browser-side links.
+    retracedExternalUrl: ""
+    # -- Public URL of the admin portal itself (required by NextAuth).
+    nextauthUrl: ""
+    # -- Comma-separated list of email addresses allowed to sign in (NextAuth ACL).
+    nextauthAcl: ""
+
+  # -- Sensitive admin portal credentials rendered as a Secret when createSecret is true.
+  # Set createSecret: false and supply credentials via extraEnvFrom.
+  credentials:
+    createSecret: true
+    jacksonApiKeys: ""
+    dbUrl: ""
+    nextauthSecret: ""
+    retracedAdminRootToken: ""
+    smtpHost: ""
+    smtpPort: ""
+    smtpUser: ""
+    smtpPassword: ""
+    smtpFrom: ""
+
+  service:
+    type: ClusterIP
+    port: 5225
+
+  resources:
+    requests:
+      cpu: 100m
+    limits:
+      cpu: "1"
+
+  # -- Extra environment variables injected into the admin portal pod.
+  extraEnv: []
+  # -- Extra envFrom sources mounted into the admin portal pod.
+  # Use this to supply credentials from external secret management (ESO, Sealed Secrets, etc.).
+  extraEnvFrom: []

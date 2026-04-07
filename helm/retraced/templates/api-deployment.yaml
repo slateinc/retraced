@@ -59,6 +59,11 @@ spec:
             - build/src/index.js
           envFrom: {{- include "retraced.envFrom" . | nindent 12 }}
           env:
+            - name: BUGSNAG_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "retraced.credentialsSecretName" . }}
+                  key: API_TOKEN
             - name: EXPORT_PAGE_SIZE_INTERNAL
               value: {{ quote .Values.api.env.exportPageSizeInternal }}
             - name: PG_SEARCH

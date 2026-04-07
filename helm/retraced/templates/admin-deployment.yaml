@@ -1,0 +1,54 @@
+{{- if .Values.admin.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "retraced.fullname" . }}-admin
+  labels:
+    {{- include "retraced.labels" . | nindent 4 }}
+    app.kubernetes.io/component: admin
+spec:
+  replicas: {{ .Values.admin.replicas }}
+  selector:
+    matchLabels:
+      {{- include "retraced.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: admin
+  template:
+    metadata:
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/admin-configmap.yaml") . | sha256sum }}
+        checksum/secret: {{ include (print $.Template.BasePath "/admin-secret.yaml") . | sha256sum }}
+      labels:
+        {{- include "retraced.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: admin
+    spec:
+      serviceAccountName: {{ include "retraced.serviceAccountName" . }}
+      containers:
+        - name: admin
+          image: {{ include "retraced.image" (dict "image" .Values.admin.image "global" .Values.global "default" .Values.admin.image.tag) }}
+          imagePullPolicy: {{ .Values.admin.image.pullPolicy }}
+          envFrom: {{- include "retraced.adminEnvFrom" . | nindent 12 }}
+          {{- with .Values.admin.extraEnv }}
+          env:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          ports:
+            - name: http
+              containerPort: 5225
+              protocol: TCP
+          startupProbe:
+            httpGet:
+              path: /api/health
+              port: 5225
+            failureThreshold: 5
+            periodSeconds: 10
+            timeoutSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /api/health
+              port: 5225
+            failureThreshold: 5
+            periodSeconds: 30
+            successThreshold: 2
+            timeoutSeconds: 10
+          resources: {{- toYaml .Values.admin.resources | nindent 12 }}
+{{- end }}
